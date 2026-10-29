@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Task {
+  id String @id @default(cuid(2))
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name      String    @db.VarChar(255)
+  completed Boolean   @default(false)
+  tags      String[]  @default([])
+  pin       String?   @db.VarChar(6)
+  area      ETaskArea @default(home)
+
+  subTasks SubTask[]
+
+  @@map("tasks")
+}
+
+model SubTask {
+  id String @id @default(cuid(2))
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name      String  @db.VarChar(255)
+  completed Boolean @default(false)
+
+  taskId String @map("task_id")
+  task   Task   @relation(fields: [taskId], references: [id])
+
+  @@map("subtasks")
+}
+
+enum ETaskArea {
+  home
+  work
+}
