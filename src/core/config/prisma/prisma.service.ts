@@ -12,7 +12,7 @@ export class PrismaService
     const adapter = new PrismaPg({
       connectionString: configService.getOrThrow<string>('POSTGRESS_DB_URL'),
     });
-    super({ adapter });
+    super({ adapter, log: ['query'] });
   }
 
   async onModuleDestroy() {
@@ -22,6 +22,7 @@ export class PrismaService
       console.error(e);
     }
   }
+
   async onModuleInit() {
     await this.$connect();
     console.log(`[PrismaService] Connected to DB`);
