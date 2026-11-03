@@ -7,39 +7,27 @@ datasource db {
   provider = "postgresql"
 }
 
-model Task {
-  id String @id @default(cuid(2))
+model User {
+  id String @id @default(cuid())
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  name      String    @db.VarChar(255)
-  completed Boolean   @default(false)
-  tags      String[]  @default([])
-  pin       String?   @db.VarChar(6)
-  area      ETaskArea @default(home)
+  email    String @unique
+  name     String
+  password String
 
-  subTasks SubTask[]
-
-  @@map("tasks")
+  sessions Session[]
 }
 
-model SubTask {
-  id String @id @default(cuid(2))
+model Session {
+  id String @id @default(cuid())
+
+  token String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  name      String  @db.VarChar(255)
-  completed Boolean @default(false)
-
-  taskId String @map("task_id")
-  task   Task   @relation(fields: [taskId], references: [id])
-
-  @@map("subtasks")
-}
-
-enum ETaskArea {
-  home
-  work
+  expiresAt DateTime @map("expires_at")
 }
