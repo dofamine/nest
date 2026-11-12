@@ -2,7 +2,9 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import * as argon2 from 'argon2';
@@ -15,12 +17,17 @@ import { TSessionUser } from '../../shared/types/session-user.js';
 import { SessionService } from '../../core/configs/session/session.service.js';
 import { PrismaService } from '../../core/configs/prisma/prisma.service.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
+import { Mailer } from '@nestjs/mail';
+import { InvitationMail } from '../../shared/notifications/invitation.mail.js';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly cookieSessionService: SessionService,
+    private readonly mailer: Mailer,
   ) {}
 
   async create({
@@ -141,17 +148,52 @@ export class UserService {
     payload: InviteUserDto,
     user: TSessionUser,
   ): Promise<string> {
-    const [{ id }] = await this.prismaService.invitation.createManyAndReturn({
-      data: {
-        email: payload.email,
-        userId: user.id,
-      },
-      select: {
-        id: true,
-      },
-    });
+    let invitation: { id: string };
 
-    return id;
+    try {
+      invitation = await this.prismaService.invitation.create({
+        data: {
+          email: payload.email,
+          userId: user.id,
+        },
+        select: {
+          id: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('This email has already been invited');
+      }
+
+      throw error;
+    }
+
+    try {
+      await this.mailer.send(InvitationMail, {
+        to: payload.email,
+        retry: { attempts: 2, backoff: () => '2s' },
+        data: {
+          invitationUrl: `http://localhost:3000/invite/${invitation.id}`,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Could not send invitation to ${payload.email}`, error);
+
+      await this.prismaService.invitation.deleteMany({
+        where: {
+          id: invitation.id,
+        },
+      });
+
+      throw new ServiceUnavailableException(
+        'The invitation email could not be sent. Please try again.',
+      );
+    }
+
+    return invitation.id;
   }
 
   private generateToken(): string {

@@ -7,6 +7,7 @@ import { CronModule } from './cron/cron.module.js';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './guards/auth/auth.guard.js';
 import { AuthService } from './services/auth/auth.service.js';
+import { EmailModule } from './configs/email/email.module.js';
 
 @Global()
 @Module({
@@ -19,6 +20,7 @@ import { AuthService } from './services/auth/auth.service.js';
     ThrottlerModule.forRoot([{ ttl: 30_000, limit: 5 }]),
     SessionModule,
     CronModule,
+    EmailModule,
   ],
   providers: [
     AuthService,
