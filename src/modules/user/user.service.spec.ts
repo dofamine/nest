@@ -69,10 +69,14 @@ describe('UserService session revocation', () => {
 
   it('revokes all sessions belonging to the token owner only', async () => {
     await service.logoutAll('alice-laptop');
-    expect(sessions).toEqual([{ token: 'bob-laptop', userId: 'bob', expiresAt }]);
+    expect(sessions).toEqual([
+      { token: 'bob-laptop', userId: 'bob', expiresAt },
+    ]);
 
     await expect(service.logoutAll('alice-laptop')).resolves.toBeUndefined();
-    expect(sessions).toEqual([{ token: 'bob-laptop', userId: 'bob', expiresAt }]);
+    expect(sessions).toEqual([
+      { token: 'bob-laptop', userId: 'bob', expiresAt },
+    ]);
   });
 
   it('does not delete sessions when logoutAll receives an unknown token', async () => {

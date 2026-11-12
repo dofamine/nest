@@ -7,35 +7,34 @@ import {
   Post,
   Req,
   Res,
-  UseGuards,
 } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { UserService } from './user.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { LoginUserDto } from './dto/login-user.dto.js';
-import { CookieSessionService } from '../../core/config/session/cookie-session.service.js';
 import { type Request, type Response } from 'express';
-import { AuthGuard } from '../../core/guards/auth/auth.guard.js';
-import { SessionUser } from '../../core/decorators/session-user/session-user.decorator.js';
-import type { TSessionUser } from '../../core/types/session-user.js';
+import { SessionUser } from '../../core/decorators/session-user.decorator.js';
+import type { TSessionUser } from '../../shared/types/session-user.js';
+import { SessionService } from '../../core/configs/session/session.service.js';
+import { Public } from '../../core/decorators/public.decorator.js';
+import { InviteUserDto } from './dto/invite-user.dto.js';
 
 @Controller('user')
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly sessionService: CookieSessionService,
+    private readonly sessionService: SessionService,
   ) {}
 
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
-  @UseGuards(ThrottlerGuard)
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
 
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  @UseGuards(ThrottlerGuard)
   async login(
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
@@ -73,16 +72,17 @@ export class UserController {
   }
 
   @HttpCode(HttpStatus.OK)
-  @Get('status')
-  @UseGuards(AuthGuard)
-  getStatus() {
-    return { isValid: true };
-  }
-
-  @HttpCode(HttpStatus.OK)
   @Get('@me')
-  @UseGuards(AuthGuard)
   getMe(@SessionUser() user: TSessionUser) {
     return user;
+  }
+
+  @HttpCode(HttpStatus.CREATED)
+  @Post('invite')
+  inviteUser(
+    @Body() payload: InviteUserDto,
+    @SessionUser() user: TSessionUser,
+  ) {
+    return this.userService.inviteUser(payload, user);
   }
 }

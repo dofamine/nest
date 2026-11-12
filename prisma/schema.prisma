@@ -14,10 +14,13 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   email    String @unique
-  name     String
+  name     String @default("")
   password String
 
-  sessions Session[]
+  sessions    Session[]
+  invitations Invitation[]
+
+  @@map("users")
 }
 
 model Session {
@@ -30,4 +33,20 @@ model Session {
 
   createdAt DateTime @default(now()) @map("created_at")
   expiresAt DateTime @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Invitation {
+  id String @id @default(cuid())
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  email String @unique
+
+  userId     String
+  invited_by User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("invitations")
 }

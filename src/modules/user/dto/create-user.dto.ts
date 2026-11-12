@@ -17,6 +17,5 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsString()
-  @MaxLength(255)
-  name: string;
+  invitationId: string;
 }

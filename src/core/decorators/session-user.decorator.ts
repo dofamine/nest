@@ -3,7 +3,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { TAuthRequest, TSessionUser } from '../../types/session-user.js';
+import { TAuthRequest, TSessionUser } from '../../shared/types/session-user.js';
 
 export const SessionUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): TSessionUser => {

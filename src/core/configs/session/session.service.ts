@@ -3,7 +3,7 @@ import { type CookieOptions, type Request, type Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class CookieSessionService {
+export class SessionService {
   private readonly sessionCookieName = 'session';
   private readonly cookieOptions: CookieOptions;
 

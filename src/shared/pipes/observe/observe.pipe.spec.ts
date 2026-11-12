@@ -1,4 +1,4 @@
-import { ObservePipe } from './observe.pipe';
+import { ObservePipe } from './observe.pipe.js';
 
 describe('ObservePipe', () => {
   it('should be defined', () => {

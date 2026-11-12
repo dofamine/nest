@@ -1,31 +1,47 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
-import { PrismaService } from '../../core/config/prisma/prisma.service.js';
 import * as argon2 from 'argon2';
 import { LoginUserDto } from './dto/login-user.dto.js';
 import { UserModel } from '../../generated/prisma/models/User.js';
 import { randomBytes } from 'node:crypto';
-import { CookieSessionService } from '../../core/config/session/cookie-session.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { SessionModel } from '../../generated/prisma/models/Session.js';
-import { TSessionUser } from '../../core/types/session-user.js';
+import { TSessionUser } from '../../shared/types/session-user.js';
+import { SessionService } from '../../core/configs/session/session.service.js';
+import { PrismaService } from '../../core/configs/prisma/prisma.service.js';
+import { InviteUserDto } from './dto/invite-user.dto.js';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly cookieSessionService: CookieSessionService,
+    private readonly cookieSessionService: SessionService,
   ) {}
 
   async create({
-    name,
     email,
     password,
+    invitationId,
   }: CreateUserDto): Promise<Omit<UserModel, 'password'>> {
+    const invitation = await this.prismaService.invitation.findUnique({
+      where: { id: invitationId },
+    });
+
+    if (!invitation) {
+      throw new ForbiddenException('Invitation not found');
+    }
+
+    if (invitation.email !== email) {
+      throw new ForbiddenException(
+        'Invitation has been registered on different email',
+      );
+    }
+
     const existingUser = await this.prismaService.user.findUnique({
       where: { email },
     });
@@ -44,7 +60,6 @@ export class UserService {
     try {
       return await this.prismaService.user.create({
         data: {
-          name,
           email,
           password: passwordHash,
         },
@@ -105,58 +120,6 @@ export class UserService {
     return true;
   }
 
-  async getSessionUser(sessionToken: string): Promise<{
-    user: TSessionUser;
-    newSession: Pick<SessionModel, 'token' | 'expiresAt'> | null;
-  } | null> {
-    const session = await this.prismaService.session.findUnique({
-      where: { token: sessionToken },
-      select: {
-        expiresAt: true,
-        user: {
-          omit: { password: true },
-        },
-      },
-    });
-    const now = Date.now();
-
-    if (!session || session.expiresAt.getTime() <= now) {
-      return null;
-    }
-
-    const remainingSessionTime = session.expiresAt.getTime() - now;
-    const shallBeRenewed =
-      remainingSessionTime <=
-      this.cookieSessionService.sessionDurationTime * 0.3;
-
-    let newSession = null;
-
-    if (shallBeRenewed) {
-      const [updatedSession] =
-        await this.prismaService.session.updateManyAndReturn({
-          where: {
-            token: sessionToken,
-            expiresAt: { gt: new Date() },
-          },
-          data: {
-            expiresAt: this.cookieSessionService.sessionExpiration,
-          },
-          select: {
-            token: true,
-            expiresAt: true,
-          },
-        });
-
-      if (!updatedSession) {
-        return null;
-      }
-
-      newSession = updatedSession;
-    }
-
-    return { user: session.user, newSession };
-  }
-
   async logoutAll(sessionToken: string): Promise<void> {
     await this.prismaService.$transaction(async (tx) => {
       const session = await tx.session.findUnique({
@@ -172,6 +135,23 @@ export class UserService {
         where: { userId: session.userId },
       });
     });
+  }
+
+  async inviteUser(
+    payload: InviteUserDto,
+    user: TSessionUser,
+  ): Promise<string> {
+    const [{ id }] = await this.prismaService.invitation.createManyAndReturn({
+      data: {
+        email: payload.email,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return id;
   }
 
   private generateToken(): string {
