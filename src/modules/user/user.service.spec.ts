@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserService } from './user.service.js';
-import type { PrismaService } from '../../core/config/prisma/prisma.service.js';
-import type { CookieSessionService } from '../../core/config/session/cookie-session.service.js';
+import type { PrismaService } from '../../core/configs/prisma/prisma.service.js';
+import type { SessionService } from '../../core/configs/session/session.service.js';
+import type { Mailer } from '@nestjs/mail';
+import type { ConfigService } from '@nestjs/config';
 
 describe('UserService session revocation', () => {
   let sessions: Array<{ token: string; userId: string; expiresAt: Date }>;
@@ -48,7 +50,11 @@ describe('UserService session revocation', () => {
 
     service = new UserService(
       prisma as unknown as PrismaService,
-      {} as CookieSessionService,
+      {} as SessionService,
+      {} as Mailer,
+      {
+        getOrThrow: vi.fn().mockReturnValue('https://app.example.com'),
+      } as unknown as ConfigService,
     );
   });
 

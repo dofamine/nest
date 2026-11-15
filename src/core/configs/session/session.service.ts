@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { type CookieOptions, type Request, type Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import type { Session } from '../../../generated/prisma/client.js';
 
 @Injectable()
 export class SessionService {
@@ -16,18 +17,47 @@ export class SessionService {
     };
   }
 
-  get sessionExpiration(): Date {
+  get sessionDurationTime(): number {
+    return 1000 * 60 * 60 * 24; // 24h
+  }
+
+  get sessionAbsoluteDurationTime(): number {
+    return 1000 * 60 * 60 * 24 * 6; // 6 days
+  }
+
+  getBrandNewExpirationDate(): Date {
     return new Date(Date.now() + this.sessionDurationTime);
   }
 
-  get sessionDurationTime(): number {
-    return 1000 * 60 * 60 * 24; // 24h
+  isRenewable(session: Pick<Session, 'createdAt' | 'expiresAt'>): boolean {
+    if (this.isAbsoluteExpired(session)) return false;
+
+    const expirationThreshold = 0.3; // 30% or less to expire
+    const remainingTime = session.expiresAt.getTime() - Date.now();
+
+    return remainingTime <= this.sessionDurationTime * expirationThreshold;
+  }
+
+  isAbsoluteExpired(session: Pick<Session, 'createdAt'>): boolean {
+    return (
+      Date.now() >=
+      session.createdAt.getTime() + this.sessionAbsoluteDurationTime
+    );
+  }
+
+  getRenewedExpiration(session: Pick<Session, 'createdAt'>): Date {
+    return new Date(
+      Math.min(
+        this.getBrandNewExpirationDate().getTime(),
+        session.createdAt.getTime() + this.sessionAbsoluteDurationTime,
+      ),
+    );
   }
 
   set(res: Response, token: string, expiresAt?: Date): void {
     res.cookie(this.sessionCookieName, token, {
       ...this.cookieOptions,
-      expires: expiresAt ?? this.sessionExpiration,
+      expires: expiresAt ?? this.getBrandNewExpirationDate(),
     });
   }
 

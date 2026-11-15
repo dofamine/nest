@@ -25,26 +25,25 @@ export class AuthService {
       select: {
         expiresAt: true,
         token: true,
+        createdAt: true,
         user: {
           omit: { password: true },
         },
       },
     });
 
-    if (!session) return null;
+    if (!session || this.sessionService.isAbsoluteExpired(session)) return null;
 
-    void this.handleSessionExpiration(session, res);
+    await this.handleSessionExpiration(session, res);
 
     return session.user;
   }
 
   private async handleSessionExpiration(
-    session: Pick<SessionModel, 'token' | 'expiresAt'>,
+    session: Pick<SessionModel, 'token' | 'expiresAt' | 'createdAt'>,
     res: Response,
   ): Promise<void> {
-    const remainingTime = session.expiresAt.getTime() - Date.now();
-    const shouldBeRenewed =
-      remainingTime <= this.sessionService.sessionDurationTime * 0.3; // 30% or less to expire
+    const shouldBeRenewed = this.sessionService.isRenewable(session);
 
     if (!shouldBeRenewed) return;
 
@@ -55,7 +54,7 @@ export class AuthService {
           expiresAt: { gt: new Date() },
         },
         data: {
-          expiresAt: this.sessionService.sessionExpiration,
+          expiresAt: this.sessionService.getRenewedExpiration(session),
         },
         select: {
           token: true,

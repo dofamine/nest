@@ -9,9 +9,8 @@ export interface IInvitationMailData {
 export class InvitationMail implements Mailable<IInvitationMailData> {
   render(
     data: IInvitationMailData,
-    context: MailRenderContext,
+    _context: MailRenderContext,
   ): MailTemplateContent {
-    console.log(context);
     return {
       template: 'invitation',
       subject: 'Invitation for Registration',

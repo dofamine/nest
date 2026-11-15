@@ -14,6 +14,8 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  const invitationExpiresAt = new Date(Date.now() + 999 * 24 * 60 * 60 * 1000);
+
   let inviter = await prisma.user.findUnique({
     where: {
       email: 'admin@example.com',
@@ -49,14 +51,17 @@ async function main() {
       {
         email: 'pryatko.oleg@gmail.com',
         userId: inviter.id,
+        expiresAt: invitationExpiresAt,
       },
       {
         email: 'bob@example.com',
         userId: inviter.id,
+        expiresAt: invitationExpiresAt,
       },
       {
         email: 'charlie@example.com',
         userId: inviter.id,
+        expiresAt: invitationExpiresAt,
       },
     ],
     skipDuplicates: true,

@@ -14,9 +14,9 @@ import {
       transport: new FileMailTransport({
         directory: join(process.cwd(), 'var', 'mail'),
       }),
-      // Mail bodies are HTML files in mail/templates, wrapped in mail/templates/layout.html
+      // Mail bodies are copied from src/mail/templates to dist/mail/templates.
       templates: new FileTemplateEngine({
-        dir: join(process.cwd(), 'mail', 'templates'),
+        dir: join(process.cwd(), 'src', 'mail', 'templates'),
         layout: 'layout',
         // Development reads the files for every mail, so edits show up without a restart
         cache: process.env.NODE_ENV === 'production',

@@ -17,6 +17,8 @@ import type { TSessionUser } from '../../shared/types/session-user.js';
 import { SessionService } from '../../core/configs/session/session.service.js';
 import { Public } from '../../core/decorators/public.decorator.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
 
 @Controller('user')
 export class UserController {
@@ -44,6 +46,7 @@ export class UserController {
     this.sessionService.set(res, token, expiresAt);
   }
 
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response, @Req() req: Request) {
@@ -60,13 +63,9 @@ export class UserController {
   @Post('logout-all')
   async logoutAll(
     @Res({ passthrough: true }) res: Response,
-    @Req() req: Request,
+    @SessionUser() user: TSessionUser,
   ) {
-    const sessionToken = this.sessionService.get(req);
-
-    if (sessionToken) {
-      await this.userService.logoutAll(sessionToken);
-    }
+    await this.userService.logoutAll(user);
 
     this.sessionService.clear(res);
   }
@@ -84,5 +83,25 @@ export class UserController {
     @SessionUser() user: TSessionUser,
   ) {
     return this.userService.inviteUser(payload, user);
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Post('forgot-password')
+  async forgotPassword(@Body() payload: ForgotPasswordDto) {
+    await this.userService.requestPasswordReset(payload);
+
+    return {
+      message: 'If the account exists, a password reset email has been sent',
+    };
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('reset-password')
+  async resetPassword(@Body() payload: ResetPasswordDto) {
+    await this.userService.resetPassword(payload);
+
+    return { message: 'Password has been reset' };
   }
 }
