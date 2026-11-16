@@ -1,0 +1,10 @@
+<header class="site-header">
+  <a class="brand" routerLink="/" aria-label="Logo Portal home"
+    ><span class="brand-mark" aria-hidden="true">L</span> Logo Portal</a
+  >
+  @defer (when session.user()) {
+    <app-user-menu />
+  } @placeholder {
+    <span class="header-caption">Your team. One workspace.</span>
+  }
+</header>

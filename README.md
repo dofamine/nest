@@ -25,6 +25,103 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Angular frontend
+
+The UI is branded as **Logo Portal**, using PrimeNG 21 components and a custom
+Aura preset with red primary actions and grey surfaces. Theme tokens live in
+`frontend/src/app/core/theme/logo-portal.preset.ts`.
+
+Frontend structure:
+
+```text
+frontend/src/app/
+  app.config.ts          # HTTP, router, and PrimeNG providers
+  app.routes.ts          # Combines public and private route groups
+  routes/
+    public.routes.ts     # Login, invitation, and password recovery
+    private.routes.ts    # Authenticated pages, protected by authGuard
+  pages/
+    auth/                # Public account forms and templates
+    dashboard/           # Blank dashboard
+    patients/            # Blank patients page
+    profile/             # Read-only /user/@me form
+    users/               # Admin-only invitations
+  shared/
+    components/          # Header, footer, and right-side navigation
+    layouts/             # Private page shell
+  core/
+    guards/              # Authentication and admin route guards
+    interceptors/        # Central session-expiry handling
+    models/              # Shared API types
+    services/            # API client and session state
+    theme/               # Logo Portal design tokens
+    utils/               # Shared error presentation
+```
+
+All Angular forms use typed reactive forms. Import `ReactiveFormsModule` in each
+standalone component that renders a form and create controls with
+`NonNullableFormBuilder`. Define validators in TypeScript, bind inputs with
+`formControlName`, and keep form values in the form model. Do not introduce
+`FormsModule`, `ngModel`, or `NgForm`. Disable controls for fields that do not
+apply to the current flow so they do not block validation. Keep loading and API
+feedback in signals, and reset form interaction state after successful submission.
+
+Pages are lazy-loaded. New private pages belong under the guarded children in
+`private.routes.ts`; public pages remain usable without a session. Backend guards
+continue to enforce API permissions independently of frontend routing.
+
+The shared header displays the current name (email if no name is set), role badge,
+and a user menu for My profile, Log out, and Log out from everywhere. Reusable UI
+components and cross-feature helpers belong under `shared/`; application-wide
+authentication, HTTP infrastructure, and singleton state remain in `core/`.
+The private layout places navigation on the right on desktop and above the page
+on mobile. `/profile`, `/users`, and `/patients` support direct links and refresh.
+
+The standalone Angular app lives in `frontend/` with its own dependencies and
+TypeScript configuration. It supports sign in, invitation registration, password
+recovery/reset, the current user's profile, logout, and admin invitations.
+
+Install dependencies in both directories:
+
+```bash
+npm ci
+npm run install:frontend
+```
+
+For development, run these in separate terminals:
+
+```bash
+npm run start:dev
+npm run start:frontend
+```
+
+Open `http://127.0.0.1:4200`. Angular proxies `/user/**` to Nest at
+`http://127.0.0.1:3000` (edit `frontend/proxy.conf.json` if the backend port changes).
+Set `FRONTEND_URL=http://127.0.0.1:4200` in the backend environment for invitation
+and password-reset links. Use `NODE_ENV=development` locally over HTTP.
+The existing mail transport writes messages to `var/mail` instead of sending email.
+
+To serve both apps from Nest:
+
+```bash
+npm run build:all
+npm run start:prod
+```
+
+Open `http://localhost:3000` and set `FRONTEND_URL` to that origin (or the public
+HTTPS origin in production). Deploy both `dist/` and
+`frontend/dist/portal/browser/`, keeping the directory structure. The Nest-only
+`npm run build` command does not rebuild Angular. Restart Nest after building the
+frontend for the first time. If no frontend build exists, Nest runs as an API only.
+
+The API remains at `/user/*`. Cookies are same-origin in both modes; no token is
+stored in browser storage. The frontend hides admin controls, while the backend
+role guard enforces access. Registration requires an invitation ID from
+`/invite/:invitationId`; password reset uses `/reset-password?token=...`.
+The existing limit of five requests per 30 seconds can produce a retry message
+during rapid manual testing. Active duplicate invitations retain the backend's
+existing conflict behavior.
+
 ## Project setup
 
 ```bash

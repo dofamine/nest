@@ -1,0 +1,37 @@
+@if (api.user(); as user) {
+  <div class="header-user">
+    <div class="user-identity">
+      <span class="user-name">{{ user.name || user.email }}</span
+      ><p-tag
+        [value]="user.role"
+        severity="secondary"
+        [rounded]="true"
+        styleClass="capitalize"
+      />
+    </div>
+    <p-menu
+      #userMenu
+      [model]="menu()"
+      [popup]="true"
+      appendTo="body"
+      id="account-menu"
+    />
+    <p-button
+      icon="pi pi-chevron-down"
+      severity="secondary"
+      [text]="true"
+      [rounded]="true"
+      ariaLabel="Open user menu"
+      aria-haspopup="menu"
+      aria-controls="account-menu"
+      [loading]="busy()"
+      [disabled]="busy()"
+      (onClick)="userMenu.toggle($event)"
+    />
+  </div>
+}
+@if (error()) {
+  <div class="header-feedback">
+    <p-message severity="error">{{ error() }}</p-message>
+  </div>
+}

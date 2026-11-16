@@ -1,0 +1,85 @@
+<section aria-labelledby="profile-title">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">YOUR ACCOUNT</span>
+      <h1 id="profile-title">My profile<span class="accent">.</span></h1>
+      <p class="muted">Your account information. These fields are read-only.</p>
+    </div>
+  </div>
+  @if (loading()) {
+  <p role="status">Loading your profile…</p>
+  } @if (error()) { <p-message severity="error">{{ error() }}</p-message> } @if
+  (!loading() && api.user()) {
+  <p-card>
+    <form
+      [formGroup]="form"
+      class="profile-form"
+      aria-label="Read-only profile"
+      (submit)="$event.preventDefault()"
+    >
+      <div class="form-field">
+        <label for="profile-id">User ID</label
+        ><input
+          pInputText
+          id="profile-id"
+          formControlName="id"
+          readonly
+          [fluid]="true"
+        />
+      </div>
+      <div class="form-field">
+        <label for="profile-name">Name</label
+        ><input
+          pInputText
+          id="profile-name"
+          formControlName="name"
+          placeholder="Not provided"
+          readonly
+          [fluid]="true"
+        />
+      </div>
+      <div class="form-field">
+        <label for="profile-email">Email address</label
+        ><input
+          pInputText
+          id="profile-email"
+          type="email"
+          formControlName="email"
+          readonly
+          [fluid]="true"
+        />
+      </div>
+      <div class="form-field">
+        <label for="profile-role">Role</label
+        ><input
+          pInputText
+          id="profile-role"
+          formControlName="role"
+          readonly
+          [fluid]="true"
+        />
+      </div>
+      <div class="form-field">
+        <label for="profile-created">Created at (UTC)</label
+        ><input
+          pInputText
+          id="profile-created"
+          formControlName="createdAt"
+          readonly
+          [fluid]="true"
+        />
+      </div>
+      <div class="form-field">
+        <label for="profile-updated">Updated at (UTC)</label
+        ><input
+          pInputText
+          id="profile-updated"
+          formControlName="updatedAt"
+          readonly
+          [fluid]="true"
+        />
+      </div>
+    </form>
+  </p-card>
+  }
+</section>

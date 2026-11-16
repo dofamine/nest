@@ -1,0 +1,52 @@
+<section aria-labelledby="users-title">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">TEAM MANAGEMENT</span>
+      <h1 id="users-title">Users<span class="accent">.</span></h1>
+    </div>
+  </div>
+  @if (error()) {
+  <p-message severity="error" styleClass="feedback">{{ error() }}</p-message> }
+  <p-card>
+    <h2>Invite a user</h2>
+    <p class="muted">
+      Invite a colleague to join as a therapist. Invitations are valid for seven
+      days.
+    </p>
+    @if (invited()) {
+    <p-message severity="success" styleClass="feedback"
+      >Invitation created for {{ invited() }}.</p-message
+    >
+    }
+    <form [formGroup]="form" (ngSubmit)="invite()">
+      <div class="form-field">
+        <label for="invite-email">Colleague’s email</label
+        ><input
+          pInputText
+          id="invite-email"
+          name="email"
+          type="email"
+          formControlName="email"
+          required
+          autocomplete="email"
+          placeholder="colleague@example.com"
+          [fluid]="true"
+          [invalid]="submitted() && form.controls.email.invalid"
+        />
+      </div>
+      @if (submitted() && form.invalid) {
+      <p-message severity="error" size="small" variant="simple"
+        >Enter a valid email address.</p-message
+      >
+      }
+      <p-button
+        type="submit"
+        label="Send invitation"
+        icon="pi pi-send"
+        [loading]="busy()"
+        [disabled]="busy()"
+        styleClass="submit-button"
+      />
+    </form>
+  </p-card>
+</section>
