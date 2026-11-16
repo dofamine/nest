@@ -4,6 +4,7 @@ import { PrismaService } from '../../configs/prisma/prisma.service.js';
 import { SessionService } from '../../configs/session/session.service.js';
 import { SessionModel } from '../../../generated/prisma/models/Session.js';
 import type { Request, Response } from 'express';
+import { UserModel } from '../../../generated/prisma/models/User.js';
 
 @Injectable()
 export class AuthService {
@@ -32,11 +33,35 @@ export class AuthService {
       },
     });
 
-    if (!session || !this.sessionService.isValid(session)) return null;
+    if (
+      !session ||
+      session.user.deactivatedAt ||
+      !this.sessionService.isValid(session)
+    )
+      return null;
 
+    this.recordActivity(session.user);
     await this.handleSessionExpiration(session, res);
 
     return session.user;
+  }
+
+  // Record activity at most once per minute per user.
+  private recordActivity(user: Omit<UserModel, 'password'>): void {
+    const frequencyWindow = 60_000;
+
+    if (
+      !user.lastActiveAt ||
+      Date.now() - user.lastActiveAt.getTime() > frequencyWindow
+    ) {
+      void this.prismaService.user.updateMany({
+        where: {
+          id: user.id,
+          deactivatedAt: null,
+        },
+        data: { lastActiveAt: new Date() },
+      });
+    }
   }
 
   private async handleSessionExpiration(

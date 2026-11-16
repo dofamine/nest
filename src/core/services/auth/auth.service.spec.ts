@@ -46,6 +46,7 @@ describe('AuthService', () => {
     service = new AuthService(
       {
         session: { findUnique, updateManyAndReturn },
+        user: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       } as unknown as PrismaService,
       sessionService as unknown as SessionService,
     );
@@ -62,6 +63,15 @@ describe('AuthService', () => {
     findUnique.mockResolvedValue(null);
 
     await expect(service.getSessionUser(request, response)).resolves.toBeNull();
+  });
+
+  it('rejects a deactivated user even when their session still exists', async () => {
+    findUnique.mockResolvedValue({
+      ...session,
+      user: { ...user, deactivatedAt: new Date() },
+    });
+    await expect(service.getSessionUser(request, response)).resolves.toBeNull();
+    expect(sessionService.canBeRenewed).not.toHaveBeenCalled();
   });
 
   it('returns null when the session is invalid', async () => {

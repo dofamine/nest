@@ -42,7 +42,6 @@ describe('CronService', () => {
 
   it('starts deletion of expired invitations', () => {
     expect(service.invitationCleanUp()).toBeUndefined();
-
     expect(invitationDeleteMany).toHaveBeenCalledWith({
       where: { expiresAt: { lte: expect.any(Date) } },
     });

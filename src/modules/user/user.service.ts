@@ -5,7 +5,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ServiceUnavailableException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import * as argon2 from 'argon2';
@@ -17,16 +16,13 @@ import { SessionModel } from '../../generated/prisma/models/Session.js';
 import { TSessionUser } from '../../shared/types/session-user.js';
 import { SessionService } from '../../core/configs/session/session.service.js';
 import { PrismaService } from '../../core/configs/prisma/prisma.service.js';
-import { InviteUserDto } from './dto/invite-user.dto.js';
 import { Mailer } from '@nestjs/mail';
-import { InvitationMail } from '../../shared/notifications/invitation.mail.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { ForgotPasswordMail } from '../../shared/notifications/forgot-password.mail.js';
 import { ConfigService } from '@nestjs/config';
 
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
-const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class UserService {
@@ -96,10 +92,11 @@ export class UserService {
       select: {
         password: true,
         id: true,
+        deactivatedAt: true,
       },
     });
 
-    if (!user) {
+    if (!user || user.deactivatedAt) {
       throw new NotFoundException('User not found');
     }
 
@@ -134,78 +131,6 @@ export class UserService {
     await this.prismaService.session.deleteMany({
       where: { userId: user.id },
     });
-  }
-
-  // Introduce an outbox when reliable email delivery becomes important.
-  // ----------------
-  // Mail and database writes are not atomic.
-  // If a provider accepts an invitation email but the request times out,
-  // your catch block deletes the invitation and the delivered link becomes invalid.
-  // For production reliability, use an outbox table and background worker with retry/status tracking.
-  async inviteUser(
-    payload: InviteUserDto,
-    user: TSessionUser,
-  ): Promise<string> {
-    let invitation: { id: string };
-    const email = payload.email.trim().toLowerCase();
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + INVITATION_TTL_MS);
-
-    try {
-      invitation = await this.prismaService.$transaction(async (tx) => {
-        await tx.invitation.deleteMany({
-          where: {
-            email,
-            expiresAt: { lte: now },
-          },
-        });
-
-        return tx.invitation.create({
-          data: {
-            email,
-            userId: user.id,
-            expiresAt,
-          },
-          select: {
-            id: true,
-          },
-        });
-      });
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException('This email has already been invited');
-      }
-
-      throw error;
-    }
-
-    try {
-      const invitationUrl = `${this.frontendUrl.replace(/\/$/, '')}/invite/${invitation.id}`;
-      await this.mailer.send(InvitationMail, {
-        to: email,
-        retry: { attempts: 2, backoff: () => '2s' },
-        data: {
-          invitationUrl,
-        },
-      });
-    } catch (error) {
-      this.logger.error(`Could not send invitation to ${email}`, error);
-
-      await this.prismaService.invitation.deleteMany({
-        where: {
-          id: invitation.id,
-        },
-      });
-
-      throw new ServiceUnavailableException(
-        'The invitation email could not be sent. Please try again.',
-      );
-    }
-
-    return invitation.id;
   }
 
   async requestPasswordReset({ email }: ForgotPasswordDto): Promise<void> {

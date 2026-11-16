@@ -44,7 +44,9 @@ describe('UserService registration and login', () => {
     });
 
     const tx = {
-      invitation: { deleteMany: invitationDeleteMany },
+      invitation: {
+        deleteMany: invitationDeleteMany,
+      },
       user: { create: userCreate },
     };
     prisma = {
@@ -91,7 +93,10 @@ describe('UserService registration and login', () => {
       },
     });
     expect(userCreate).toHaveBeenCalledWith({
-      data: { email: 'alice@example.com', password: 'password-hash' },
+      data: {
+        email: 'alice@example.com',
+        password: 'password-hash',
+      },
       omit: { password: true },
     });
   });
@@ -140,7 +145,7 @@ describe('UserService registration and login', () => {
 
     expect(userFindUnique).toHaveBeenCalledWith({
       where: { email: 'alice@example.com' },
-      select: { password: true, id: true },
+      select: { password: true, id: true, deactivatedAt: true },
     });
     expect(argon2.verify).toHaveBeenCalledWith(
       'stored-hash',
@@ -167,6 +172,17 @@ describe('UserService registration and login', () => {
     await expect(
       service.login({ email: 'alice@example.com', password: 'wrong' }),
     ).rejects.toBeInstanceOf(NotFoundException);
+    expect(sessionCreate).not.toHaveBeenCalled();
+  });
+  it('does not create a session for a deactivated user', async () => {
+    userFindUnique.mockResolvedValue({
+      id: 'user-1',
+      password: 'stored-hash',
+      deactivatedAt: new Date(),
+    });
+    await expect(
+      service.login({ email: 'alice@example.com', password: 'password' }),
+    ).rejects.toThrow(NotFoundException);
     expect(sessionCreate).not.toHaveBeenCalled();
   });
 });

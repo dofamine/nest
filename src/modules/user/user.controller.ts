@@ -16,11 +16,8 @@ import { SessionUser } from '../../core/decorators/session-user.decorator.js';
 import type { TSessionUser } from '../../shared/types/session-user.js';
 import { SessionService } from '../../core/configs/session/session.service.js';
 import { Public } from '../../core/decorators/public.decorator.js';
-import { InviteUserDto } from './dto/invite-user.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
-import { Roles } from '../../core/decorators/roles.decorator.js';
-import { Role } from '../../generated/prisma/enums.js';
 
 @Controller('user')
 export class UserController {
@@ -76,16 +73,6 @@ export class UserController {
   @Get('@me')
   getMe(@SessionUser() user: TSessionUser) {
     return user;
-  }
-
-  @HttpCode(HttpStatus.CREATED)
-  @Roles([Role.admin])
-  @Post('invite')
-  inviteUser(
-    @Body() payload: InviteUserDto,
-    @SessionUser() user: TSessionUser,
-  ) {
-    return this.userService.inviteUser(payload, user);
   }
 
   @Public()
