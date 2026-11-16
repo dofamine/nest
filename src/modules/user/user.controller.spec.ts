@@ -17,9 +17,9 @@ describe('UserController', () => {
     resetPassword: ReturnType<typeof vi.fn>;
   };
   let sessionService: {
-    get: ReturnType<typeof vi.fn>;
-    set: ReturnType<typeof vi.fn>;
-    clear: ReturnType<typeof vi.fn>;
+    getSession: ReturnType<typeof vi.fn>;
+    setSession: ReturnType<typeof vi.fn>;
+    deleteSession: ReturnType<typeof vi.fn>;
   };
   let controller: UserController;
   const response = {} as Response;
@@ -39,9 +39,9 @@ describe('UserController', () => {
       resetPassword: vi.fn().mockResolvedValue(undefined),
     };
     sessionService = {
-      get: vi.fn().mockReturnValue('session-token'),
-      set: vi.fn(),
-      clear: vi.fn(),
+      getSession: vi.fn().mockReturnValue('session-token'),
+      setSession: vi.fn(),
+      deleteSession: vi.fn(),
     };
     controller = new UserController(
       userService as unknown as UserService,
@@ -80,7 +80,7 @@ describe('UserController', () => {
     await controller.login(payload, response);
 
     expect(userService.login).toHaveBeenCalledWith(payload);
-    expect(sessionService.set).toHaveBeenCalledWith(
+    expect(sessionService.setSession).toHaveBeenCalledWith(
       response,
       'session-token',
       new Date('2030-01-01T00:00:00.000Z'),
@@ -91,19 +91,24 @@ describe('UserController', () => {
     await controller.logout(response, request);
 
     expect(userService.logout).toHaveBeenCalledWith('session-token');
-    expect(sessionService.clear).toHaveBeenCalledWith(response);
+    expect(sessionService.deleteSession).toHaveBeenCalledWith(response);
 
-    sessionService.get.mockReturnValueOnce(undefined);
+    sessionService.getSession.mockReturnValueOnce(undefined);
     await controller.logout(response, request);
     expect(userService.logout).toHaveBeenCalledTimes(1);
-    expect(sessionService.clear).toHaveBeenCalledTimes(2);
+    expect(sessionService.deleteSession).toHaveBeenCalledTimes(2);
   });
 
   it('revokes all sessions associated with the current session', async () => {
-    await controller.logoutAll(response, request);
+    const user = {
+      id: 'user-1',
+      email: 'alice@example.com',
+    } as TSessionUser;
 
-    expect(userService.logoutAll).toHaveBeenCalledWith('session-token');
-    expect(sessionService.clear).toHaveBeenCalledWith(response);
+    await controller.logoutAll(response, user);
+
+    expect(userService.logoutAll).toHaveBeenCalledWith(user);
+    expect(sessionService.deleteSession).toHaveBeenCalledWith(response);
   });
 
   it('returns generic password reset responses', async () => {

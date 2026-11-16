@@ -16,7 +16,7 @@ export class AuthService {
     req: Request,
     res: Response,
   ): Promise<TSessionUser | null> {
-    const token = this.sessionService.get(req);
+    const token = this.sessionService.getSession(req);
 
     if (!token) return null;
 
@@ -32,7 +32,7 @@ export class AuthService {
       },
     });
 
-    if (!session || this.sessionService.isAbsoluteExpired(session)) return null;
+    if (!session || !this.sessionService.isValid(session)) return null;
 
     await this.handleSessionExpiration(session, res);
 
@@ -43,9 +43,9 @@ export class AuthService {
     session: Pick<SessionModel, 'token' | 'expiresAt' | 'createdAt'>,
     res: Response,
   ): Promise<void> {
-    const shouldBeRenewed = this.sessionService.isRenewable(session);
+    const canBeRenewed = this.sessionService.canBeRenewed(session);
 
-    if (!shouldBeRenewed) return;
+    if (!canBeRenewed) return;
 
     const [updatedSession] =
       await this.prismaService.session.updateManyAndReturn({
@@ -64,7 +64,7 @@ export class AuthService {
 
     if (!updatedSession) return;
 
-    this.sessionService.set(
+    this.sessionService.setSession(
       res,
       updatedSession.token,
       updatedSession.expiresAt,

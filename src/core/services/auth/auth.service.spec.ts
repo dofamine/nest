@@ -24,10 +24,10 @@ describe('AuthService', () => {
   let findUnique: ReturnType<typeof vi.fn>;
   let updateManyAndReturn: ReturnType<typeof vi.fn>;
   let sessionService: {
-    get: ReturnType<typeof vi.fn>;
-    set: ReturnType<typeof vi.fn>;
-    isRenewable: ReturnType<typeof vi.fn>;
-    isAbsoluteExpired: ReturnType<typeof vi.fn>;
+    getSession: ReturnType<typeof vi.fn>;
+    setSession: ReturnType<typeof vi.fn>;
+    isValid: ReturnType<typeof vi.fn>;
+    canBeRenewed: ReturnType<typeof vi.fn>;
     getRenewedExpiration: ReturnType<typeof vi.fn>;
   };
   let service: AuthService;
@@ -36,10 +36,10 @@ describe('AuthService', () => {
     findUnique = vi.fn().mockResolvedValue(session);
     updateManyAndReturn = vi.fn();
     sessionService = {
-      get: vi.fn().mockReturnValue(session.token),
-      set: vi.fn(),
-      isRenewable: vi.fn().mockReturnValue(false),
-      isAbsoluteExpired: vi.fn().mockReturnValue(false),
+      getSession: vi.fn().mockReturnValue(session.token),
+      setSession: vi.fn(),
+      isValid: vi.fn().mockReturnValue(true),
+      canBeRenewed: vi.fn().mockReturnValue(false),
       getRenewedExpiration: vi.fn(),
     };
 
@@ -52,7 +52,7 @@ describe('AuthService', () => {
   });
 
   it('returns null without querying when the cookie is missing', async () => {
-    sessionService.get.mockReturnValue(null);
+    sessionService.getSession.mockReturnValue(null);
 
     await expect(service.getSessionUser(request, response)).resolves.toBeNull();
     expect(findUnique).not.toHaveBeenCalled();
@@ -64,22 +64,22 @@ describe('AuthService', () => {
     await expect(service.getSessionUser(request, response)).resolves.toBeNull();
   });
 
-  it('rejects a session beyond its absolute lifetime', async () => {
-    sessionService.isAbsoluteExpired.mockReturnValue(true);
+  it('returns null when the session is invalid', async () => {
+    sessionService.isValid.mockReturnValue(false);
 
     await expect(service.getSessionUser(request, response)).resolves.toBeNull();
-    expect(sessionService.isRenewable).not.toHaveBeenCalled();
+    expect(sessionService.canBeRenewed).not.toHaveBeenCalled();
   });
 
   it('returns an active session user without unnecessary renewal', async () => {
     await expect(service.getSessionUser(request, response)).resolves.toBe(user);
     expect(updateManyAndReturn).not.toHaveBeenCalled();
-    expect(sessionService.set).not.toHaveBeenCalled();
+    expect(sessionService.setSession).not.toHaveBeenCalled();
   });
 
   it('renews a session and updates its cookie before returning', async () => {
     const renewedExpiration = new Date('2026-11-16T00:00:00Z');
-    sessionService.isRenewable.mockReturnValue(true);
+    sessionService.canBeRenewed.mockReturnValue(true);
     sessionService.getRenewedExpiration.mockReturnValue(renewedExpiration);
     updateManyAndReturn.mockResolvedValue([
       { token: session.token, expiresAt: renewedExpiration },
@@ -96,7 +96,7 @@ describe('AuthService', () => {
         data: { expiresAt: renewedExpiration },
       }),
     );
-    expect(sessionService.set).toHaveBeenCalledWith(
+    expect(sessionService.setSession).toHaveBeenCalledWith(
       response,
       session.token,
       renewedExpiration,
@@ -104,17 +104,17 @@ describe('AuthService', () => {
   });
 
   it('returns the user without setting a cookie if a concurrent update no longer matches', async () => {
-    sessionService.isRenewable.mockReturnValue(true);
+    sessionService.canBeRenewed.mockReturnValue(true);
     sessionService.getRenewedExpiration.mockReturnValue(new Date());
     updateManyAndReturn.mockResolvedValue([]);
 
     await expect(service.getSessionUser(request, response)).resolves.toBe(user);
-    expect(sessionService.set).not.toHaveBeenCalled();
+    expect(sessionService.setSession).not.toHaveBeenCalled();
   });
 
   it('propagates renewal failures instead of creating an unhandled rejection', async () => {
     const error = new Error('Database unavailable');
-    sessionService.isRenewable.mockReturnValue(true);
+    sessionService.canBeRenewed.mockReturnValue(true);
     sessionService.getRenewedExpiration.mockReturnValue(new Date());
     updateManyAndReturn.mockRejectedValue(error);
 

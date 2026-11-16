@@ -8,6 +8,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './guards/auth/auth.guard.js';
 import { AuthService } from './services/auth/auth.service.js';
 import { EmailModule } from './configs/email/email.module.js';
+import { RoleGuard } from './guards/role/role.guard.js';
 
 @Global()
 @Module({
@@ -31,6 +32,10 @@ import { EmailModule } from './configs/email/email.module.js';
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RoleGuard,
     },
   ],
 })

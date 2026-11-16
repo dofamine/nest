@@ -6,45 +6,47 @@ describe('CronService', () => {
   let sessionDeleteMany: ReturnType<typeof vi.fn>;
   let resetDeleteMany: ReturnType<typeof vi.fn>;
   let invitationDeleteMany: ReturnType<typeof vi.fn>;
-  let transaction: ReturnType<typeof vi.fn>;
   let service: CronService;
 
   beforeEach(() => {
-    sessionDeleteMany = vi.fn().mockReturnValue('sessions-query');
-    resetDeleteMany = vi.fn().mockReturnValue('reset-tokens-query');
-    invitationDeleteMany = vi.fn().mockReturnValue('invitations-query');
-    transaction = vi.fn().mockResolvedValue([]);
+    sessionDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
+    resetDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
+    invitationDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
 
     service = new CronService({
       session: { deleteMany: sessionDeleteMany },
       passwordResetToken: { deleteMany: resetDeleteMany },
       invitation: { deleteMany: invitationDeleteMany },
-      $transaction: transaction,
     } as unknown as PrismaService);
   });
 
-  it('deletes all expired authentication records in one transaction', async () => {
-    await service.sessionCleanUp();
+  it('starts deletion of expired sessions', () => {
+    expect(service.sessionCleanUp()).toBeUndefined();
 
-    const sessionNow = sessionDeleteMany.mock.calls[0][0].where.expiresAt.lte;
-    const resetNow = resetDeleteMany.mock.calls[0][0].where.expiresAt.lte;
-    const invitationNow =
-      invitationDeleteMany.mock.calls[0][0].where.expiresAt.lte;
-
-    expect(sessionNow).toBeInstanceOf(Date);
-    expect(resetNow).toBe(sessionNow);
-    expect(invitationNow).toBe(sessionNow);
-    expect(transaction).toHaveBeenCalledWith([
-      'sessions-query',
-      'reset-tokens-query',
-      'invitations-query',
-    ]);
+    expect(sessionDeleteMany).toHaveBeenCalledWith({
+      where: { expiresAt: { lte: expect.any(Date) } },
+    });
+    expect(resetDeleteMany).not.toHaveBeenCalled();
+    expect(invitationDeleteMany).not.toHaveBeenCalled();
   });
 
-  it('propagates transaction failures', async () => {
-    const error = new Error('Database unavailable');
-    transaction.mockRejectedValueOnce(error);
+  it('starts deletion of expired password reset tokens', () => {
+    expect(service.passwordResetToken()).toBeUndefined();
 
-    await expect(service.sessionCleanUp()).rejects.toBe(error);
+    expect(resetDeleteMany).toHaveBeenCalledWith({
+      where: { expiresAt: { lte: expect.any(Date) } },
+    });
+    expect(sessionDeleteMany).not.toHaveBeenCalled();
+    expect(invitationDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it('starts deletion of expired invitations', () => {
+    expect(service.invitationCleanUp()).toBeUndefined();
+
+    expect(invitationDeleteMany).toHaveBeenCalledWith({
+      where: { expiresAt: { lte: expect.any(Date) } },
+    });
+    expect(sessionDeleteMany).not.toHaveBeenCalled();
+    expect(resetDeleteMany).not.toHaveBeenCalled();
   });
 });

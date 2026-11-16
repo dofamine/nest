@@ -19,6 +19,8 @@ import { Public } from '../../core/decorators/public.decorator.js';
 import { InviteUserDto } from './dto/invite-user.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
+import { Roles } from '../../core/decorators/roles.decorator.js';
+import { Role } from '../../generated/prisma/enums.js';
 
 @Controller('user')
 export class UserController {
@@ -43,20 +45,20 @@ export class UserController {
   ) {
     const { token, expiresAt } = await this.userService.login(loginUserDto);
 
-    this.sessionService.set(res, token, expiresAt);
+    this.sessionService.setSession(res, token, expiresAt);
   }
 
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response, @Req() req: Request) {
-    const sessionToken = this.sessionService.get(req);
+    const sessionToken = this.sessionService.getSession(req);
 
     if (sessionToken) {
       await this.userService.logout(sessionToken);
     }
 
-    this.sessionService.clear(res);
+    this.sessionService.deleteSession(res);
   }
 
   @HttpCode(HttpStatus.OK)
@@ -67,7 +69,7 @@ export class UserController {
   ) {
     await this.userService.logoutAll(user);
 
-    this.sessionService.clear(res);
+    this.sessionService.deleteSession(res);
   }
 
   @HttpCode(HttpStatus.OK)
@@ -77,6 +79,7 @@ export class UserController {
   }
 
   @HttpCode(HttpStatus.CREATED)
+  @Roles([Role.admin])
   @Post('invite')
   inviteUser(
     @Body() payload: InviteUserDto,

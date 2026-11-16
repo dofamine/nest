@@ -51,7 +51,7 @@ export class UserService {
     const passwordHash = await this.hashPassword(password);
 
     try {
-      return this.prismaService.$transaction(async (tx) => {
+      return await this.prismaService.$transaction(async (tx) => {
         const consumedInvitation = await tx.invitation.deleteMany({
           where: {
             id: invitationId,
@@ -153,12 +153,12 @@ export class UserService {
 
     try {
       invitation = await this.prismaService.$transaction(async (tx) => {
-        const existingInvitation = await tx.invitation.findUnique({
-          where: { email, expiresAt: { lt: new Date() } },
-          select: { id: true },
+        await tx.invitation.deleteMany({
+          where: {
+            email,
+            expiresAt: { lte: now },
+          },
         });
-
-        if (existingInvitation) return existingInvitation;
 
         return tx.invitation.create({
           data: {

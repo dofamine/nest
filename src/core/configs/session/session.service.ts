@@ -29,20 +29,22 @@ export class SessionService {
     return new Date(Date.now() + this.sessionDurationTime);
   }
 
-  isRenewable(session: Pick<Session, 'createdAt' | 'expiresAt'>): boolean {
-    if (this.isAbsoluteExpired(session)) return false;
+  isValid(session?: Pick<Session, 'createdAt' | 'expiresAt'>): boolean {
+    if (!session) return false;
+
+    return (
+      !this.isAbsoluteExpired(session) &&
+      session.expiresAt.getTime() > new Date().getTime()
+    );
+  }
+
+  canBeRenewed(session: Pick<Session, 'createdAt' | 'expiresAt'>): boolean {
+    if (!this.isValid(session)) return false;
 
     const expirationThreshold = 0.3; // 30% or less to expire
     const remainingTime = session.expiresAt.getTime() - Date.now();
 
     return remainingTime <= this.sessionDurationTime * expirationThreshold;
-  }
-
-  isAbsoluteExpired(session: Pick<Session, 'createdAt'>): boolean {
-    return (
-      Date.now() >=
-      session.createdAt.getTime() + this.sessionAbsoluteDurationTime
-    );
   }
 
   getRenewedExpiration(session: Pick<Session, 'createdAt'>): Date {
@@ -54,20 +56,27 @@ export class SessionService {
     );
   }
 
-  set(res: Response, token: string, expiresAt?: Date): void {
+  setSession(res: Response, token: string, expiresAt?: Date): void {
     res.cookie(this.sessionCookieName, token, {
       ...this.cookieOptions,
       expires: expiresAt ?? this.getBrandNewExpirationDate(),
     });
   }
 
-  clear(res: Response): void {
+  deleteSession(res: Response): void {
     res.clearCookie(this.sessionCookieName, this.cookieOptions);
   }
 
-  get(req: Request): string | null {
+  getSession(req: Request): string | null {
     return typeof req.cookies?.[this.sessionCookieName] === 'string'
       ? req.cookies[this.sessionCookieName]
       : null;
+  }
+
+  private isAbsoluteExpired(session: Pick<Session, 'createdAt'>): boolean {
+    return (
+      Date.now() >=
+      session.createdAt.getTime() + this.sessionAbsoluteDurationTime
+    );
   }
 }

@@ -58,7 +58,9 @@ describe('UserService registration and login', () => {
 
     service = new UserService(
       prisma as unknown as PrismaService,
-      { getBrandNewExpirationDate: sessionExpiration } as SessionService,
+      {
+        getBrandNewExpirationDate: vi.fn().mockReturnValue(sessionExpiration),
+      } as unknown as SessionService,
       {} as Mailer,
       {
         getOrThrow: vi.fn().mockReturnValue('https://app.example.com'),

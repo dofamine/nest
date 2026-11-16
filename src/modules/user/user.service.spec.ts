@@ -74,43 +74,34 @@ describe('UserService session revocation', () => {
   });
 
   it('revokes all sessions belonging to the token owner only', async () => {
-    await service.logoutAll('alice-laptop');
+    const alice = { id: 'alice' } as Parameters<UserService['logoutAll']>[0];
+
+    await service.logoutAll(alice);
     expect(sessions).toEqual([
       { token: 'bob-laptop', userId: 'bob', expiresAt },
     ]);
 
-    await expect(service.logoutAll('alice-laptop')).resolves.toBeUndefined();
+    await expect(service.logoutAll(alice)).resolves.toBeUndefined();
     expect(sessions).toEqual([
       { token: 'bob-laptop', userId: 'bob', expiresAt },
     ]);
   });
 
-  it('does not delete sessions when logoutAll receives an unknown token', async () => {
-    await service.logoutAll('unknown');
-    expect(deleteMany).not.toHaveBeenCalled();
-    expect(sessions).toHaveLength(3);
+  it('logout propagates database failures', async () => {
+    const error = new Error('Database unavailable');
+    deleteMany.mockRejectedValueOnce(error);
+
+    await expect(service.logout('alice-laptop')).rejects.toBe(error);
   });
 
-  it.each([-1, 0])(
-    'does not revoke other sessions when the token expires at now + %i ms',
-    async (offset) => {
-      const now = Date.now();
-      vi.spyOn(Date, 'now').mockReturnValue(now);
-      sessions[0].expiresAt = new Date(now + offset);
+  it('logoutAll propagates database failures', async () => {
+    const error = new Error('Database unavailable');
+    deleteMany.mockRejectedValueOnce(error);
 
-      await service.logoutAll('alice-laptop');
-
-      expect(deleteMany).not.toHaveBeenCalled();
-      expect(sessions).toHaveLength(3);
-    },
-  );
-
-  it.each(['logout', 'logoutAll'] as const)(
-    '%s propagates database failures',
-    async (method) => {
-      const error = new Error('Database unavailable');
-      deleteMany.mockRejectedValueOnce(error);
-      await expect(service[method]('alice-laptop')).rejects.toBe(error);
-    },
-  );
+    await expect(
+      service.logoutAll({
+        id: 'alice',
+      } as Parameters<UserService['logoutAll']>[0]),
+    ).rejects.toBe(error);
+  });
 });
