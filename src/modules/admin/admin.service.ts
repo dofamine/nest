@@ -141,17 +141,17 @@ export class AdminService {
     });
   }
 
-  async deleteInvitation(invitationId: string) {
+  async deleteInvitation(mail: string) {
     const result = await this.prismaService.invitation.deleteMany({
-      where: { id: invitationId },
+      where: { email: mail },
     });
     if (!result.count) throw new NotFoundException('Invitation not found');
     return { message: 'Invitation deleted' };
   }
 
-  async invitationLink(invitationId: string) {
+  async getInvitationLink(mail: string) {
     const invitation = await this.prismaService.invitation.findUnique({
-      where: { id: invitationId, expiresAt: { gt: new Date() } },
+      where: { email: mail, expiresAt: { gt: new Date() } },
       select: { id: true },
     });
     if (!invitation)

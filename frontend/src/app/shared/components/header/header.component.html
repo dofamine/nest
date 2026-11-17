@@ -2,9 +2,22 @@
   <a class="brand" routerLink="/" aria-label="Logo Portal home"
     ><span class="brand-mark" aria-hidden="true">L</span> Logo Portal</a
   >
-  @defer (when session.user()) {
-    <app-user-menu />
-  } @placeholder {
-    <span class="header-caption">Your team. One workspace.</span>
-  }
+  <div class="header-actions">
+    <p-button
+      (onClick)="theme.toggleTheme()"
+      [icon]="theme.dark() ? 'pi pi-sun' : 'pi pi-moon'"
+      [ariaLabel]="
+        theme.dark() ? 'Switch to light theme' : 'Switch to dark theme'
+      "
+      [title]="theme.dark() ? 'Switch to light theme' : 'Switch to dark theme'"
+      [text]="true"
+      [rounded]="true"
+      severity="secondary"
+    />
+    @defer (when session.user()) {
+      <app-user-menu />
+    } @placeholder {
+      <span class="header-caption">Your team. One workspace.</span>
+    }
+  </div>
 </header>

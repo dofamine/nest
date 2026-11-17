@@ -1,8 +1,10 @@
+import { EUserRole } from './user';
+
 export interface SessionUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'therapist';
+  role: EUserRole;
   createdAt: string;
   updatedAt: string;
 }

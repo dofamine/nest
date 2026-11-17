@@ -32,13 +32,13 @@ export class AdminController {
     return this.adminService.getInvitations();
   }
 
-  @Get('invitations/:invitationId/link')
-  invitationLink(@Param('invitationId') invitationId: string) {
-    return this.adminService.invitationLink(invitationId);
+  @Get('invitations/:mail/link')
+  getInvitationLink(@Param('mail') invitationId: string) {
+    return this.adminService.getInvitationLink(invitationId);
   }
 
-  @Delete('invitations/:invitationId')
-  deleteInvitation(@Param('invitationId') invitationId: string) {
+  @Delete('invitations/:mail')
+  deleteInvitation(@Param('mail') invitationId: string) {
     return this.adminService.deleteInvitation(invitationId);
   }
 

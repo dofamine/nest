@@ -45,7 +45,7 @@ frontend/src/app/
     dashboard/           # Blank dashboard
     patients/            # Blank patients page
     profile/             # Read-only /user/@me form
-    users/               # Admin-only invitations
+    users/               # Admin user table, invitations, and account management
   shared/
     components/          # Header, footer, and right-side navigation
     layouts/             # Private page shell
@@ -53,10 +53,33 @@ frontend/src/app/
     guards/              # Authentication and admin route guards
     interceptors/        # Central session-expiry handling
     models/              # Shared API types
-    services/            # API client and session state
+    services/            # Auth, user, page-scoped admin API, and session state
     theme/               # Logo Portal design tokens
     utils/               # Shared error presentation
 ```
+
+The admin Users page uses a PrimeNG table with name/email search and status
+filtering. Its invitation dialog sends email and adds an invited row with a
+copyable link. Row actions support role changes, deactivation/reactivation, and
+permanent deletion; administrators cannot change or delete their own account.
+Deactivation revokes sessions and blocks login. User Since is the registration
+date (blank for invitations); Last active records authenticated requests, at most
+once per minute. Accounts without recorded activity display a dash. Invitations
+expire after seven days and are omitted from the table, with periodic cleanup.
+Inviting an email again refreshes its existing invitation to seven days from now
+and resends the same link.
+Admin link lookup uses the invitation ID
+(`GET /user/invitations/:invitationId/link`).
+
+Apply database migrations when deploying this feature:
+`npx prisma migrate deploy --config prisma7.config.ts`.
+
+API responsibilities are split between root-provided `AuthService` (login,
+registration, logout, and password recovery) and `UserService` (current-user
+profile and shared read-only user state), available to all roles. `AdminService`
+contains user-directory, invitation, role, status, and deletion calls. It has no
+root provider: the admin-only Users page provides its own instance. Backend role
+guards remain responsible for authorizing admin requests.
 
 All Angular forms use typed reactive forms. Import `ReactiveFormsModule` in each
 standalone component that renders a form and create controls with
@@ -95,7 +118,7 @@ npm run start:dev
 npm run start:frontend
 ```
 
-Open `http://127.0.0.1:4200`. Angular proxies `/user/**` to Nest at
+Open `http://127.0.0.1:4200`. Angular proxies `/user/**` and `/admin/**` to Nest at
 `http://127.0.0.1:3000` (edit `frontend/proxy.conf.json` if the backend port changes).
 Set `FRONTEND_URL=http://127.0.0.1:4200` in the backend environment for invitation
 and password-reset links. Use `NODE_ENV=development` locally over HTTP.
@@ -119,8 +142,7 @@ stored in browser storage. The frontend hides admin controls, while the backend
 role guard enforces access. Registration requires an invitation ID from
 `/invite/:invitationId`; password reset uses `/reset-password?token=...`.
 The existing limit of five requests per 30 seconds can produce a retry message
-during rapid manual testing. Active duplicate invitations retain the backend's
-existing conflict behavior.
+during rapid manual testing. Repeated invitations refresh expiration and resend the existing link.
 
 ## Project setup
 

@@ -1,52 +1,107 @@
-<section aria-labelledby="users-title">
-  <div class="page-heading">
-    <div>
-      <span class="eyebrow">TEAM MANAGEMENT</span>
-      <h1 id="users-title">Users<span class="accent">.</span></h1>
-    </div>
-  </div>
-  @if (error()) {
-  <p-message severity="error" styleClass="feedback">{{ error() }}</p-message> }
-  <p-card>
-    <h2>Invite a user</h2>
-    <p class="muted">
-      Invite a colleague to join as a therapist. Invitations are valid for seven
-      days.
-    </p>
-    @if (invited()) {
-    <p-message severity="success" styleClass="feedback"
-      >Invitation created for {{ invited() }}.</p-message
-    >
-    }
-    <form [formGroup]="form" (ngSubmit)="invite()">
-      <div class="form-field">
-        <label for="invite-email">Colleague’s email</label
-        ><input
-          pInputText
-          id="invite-email"
-          name="email"
-          type="email"
-          formControlName="email"
-          required
-          autocomplete="email"
-          placeholder="colleague@example.com"
-          [fluid]="true"
-          [invalid]="submitted() && form.controls.email.invalid"
-        />
-      </div>
-      @if (submitted() && form.invalid) {
-      <p-message severity="error" size="small" variant="simple"
-        >Enter a valid email address.</p-message
-      >
-      }
-      <p-button
-        type="submit"
-        label="Send invitation"
-        icon="pi pi-send"
-        [loading]="busy()"
-        [disabled]="busy()"
-        styleClass="submit-button"
+<section aria-label="User management" class="users-panel">
+  <div [formGroup]="filtersForm" class="users-toolbar">
+    <div class="search-field">
+      <i aria-hidden="true" class="pi pi-search"></i>
+      <input
+        aria-label="Search by name or email"
+        formControlName="search"
+        pInputText
+        placeholder="Search by name or email"
       />
-    </form>
-  </p-card>
+    </div>
+    <p-select
+      [options]="statuses"
+      appendTo="body"
+      ariaLabel="Filter by status"
+      formControlName="status"
+      optionLabel="label"
+      optionValue="value"
+    />
+    <app-invite-user
+      (invited)="onInviteUser($event)"
+      [disabled]="isDataLoading()"
+      [loading]="inviting()"
+    />
+  </div>
+  @if (isDataLoadingFailed()) {
+    <p-button
+      (onClick)="getUsers()"
+      [disabled]="isDataLoading()"
+      [text]="true"
+      label="Retry"
+    />
+  }
+  <p-table
+    [loading]="isDataLoading()"
+    [paginator]="filteredUsers().length > 10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [rows]="10"
+    [value]="filteredUsers()"
+    dataKey="email"
+  >
+    <ng-template #header>
+      <tr>
+        <th scope="col">User</th>
+        <th scope="col">Role</th>
+        <th scope="col">Status</th>
+        <th scope="col">User Since</th>
+        <th scope="col">Last active</th>
+        <th scope="col"><span class="sr-only">Actions</span></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-user>
+      <tr>
+        <td>
+          <div class="table-user">
+            <span aria-hidden="true" class="avatar invited-avatar">
+              {{ (user.name || user.email).slice(0, 2).toUpperCase() }}
+            </span>
+            <div class="identity">
+              <span class="identity-name">{{ user.name || user.email }}</span>
+              @if (user.name) {
+                <span class="identity-email">{{ user.email }}</span>
+              }
+            </div>
+          </div>
+        </td>
+        <td>{{ user.role ?? '—' | uppercase }}</td>
+        <td>
+          <div class="status-cell">
+            <p-tag
+              [severity]="user.status === EUserStatus.active ? 'success' : user.status === EUserStatus.invited ? 'warn' : 'secondary'"
+              [value]="user.status ?? '-'"
+            />
+            @if (user.status === EUserStatus.invited) {
+              <app-invitation-link [user]="user" />
+            }
+          </div>
+        </td>
+        <td class="date-cell">
+          {{ (user.createdAt | date:'MMM d, y') || '—' }}
+        </td>
+        <td
+          [title]="(user.lastActiveAt | date:'medium') || ''"
+          class="date-cell"
+        >
+          {{ user.lastActiveAt | lastActive }}
+        </td>
+        <td>
+          @if (user.id !== currentUser()?.id) {
+            <app-user-actions-menu
+              (action)="onAction(user, $event)"
+              [disabled]="isDataLoading()"
+              [user]="user"
+            />
+          }
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td class="empty-state" colspan="6">
+          {{ isDataLoading() ? 'Loading users…' : 'There are no users found' }}
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
 </section>

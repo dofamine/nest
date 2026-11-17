@@ -1,0 +1,54 @@
+<p-button
+  (onClick)="openInvite()"
+  [disabled]="disabled()"
+  [loading]="loading()"
+  label="Invite user"
+  styleClass="invite-button"
+/>
+<p-dialog
+  (visibleChange)="visible.set($event)"
+  [closable]="true"
+  [closeOnEscape]="false"
+  [modal]="true"
+  [style]="{ width: '440px', maxWidth: '95vw' }"
+  [visible]="visible()"
+  header="Invite user"
+>
+  <p class="dialog-description">
+    Invite a colleague to join as a therapist. The invitation link is valid for
+    seven days.
+  </p>
+  <form (ngSubmit)="submit()" [formGroup]="form">
+    <div class="form-field">
+      <label for="invite-email">Email address</label
+      ><input
+      [fluid]="true"
+      [invalid]="form.controls.email.invalid && form.controls.email.dirty"
+      autocomplete="email"
+      formControlName="email"
+      id="invite-email"
+      pInputText
+      placeholder="colleague@example.com"
+      type="email"
+    />
+    </div>
+    @if (form.invalid && form.dirty) {
+      <p-message severity="error" size="small" variant="simple"
+      >Enter a valid email address.
+      </p-message>
+    }
+    <div class="dialog-actions">
+      <p-button
+        (onClick)="visible.set(false)"
+        [text]="true"
+        label="Cancel"
+        severity="secondary"
+      />
+      <p-button
+        icon="pi pi-send"
+        label="Send"
+        type="submit"
+      />
+    </div>
+  </form>
+</p-dialog>

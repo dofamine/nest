@@ -8,8 +8,7 @@
   </div>
   @if (loading()) {
   <p role="status">Loading your profile…</p>
-  } @if (error()) { <p-message severity="error">{{ error() }}</p-message> } @if
-  (!loading() && api.user()) {
+  } @if (!loading() && users.user()) {
   <p-card>
     <form
       [formGroup]="form"

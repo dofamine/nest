@@ -18,9 +18,11 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  email    String @unique
-  name     String @default("")
-  password String
+  email         String    @unique
+  name          String    @default("")
+  deactivatedAt DateTime? @map("deactivated_at")
+  lastActiveAt  DateTime? @map("last_active_at")
+  password      String
 
   sessions           Session[]
   invitations        Invitation[]

@@ -1,0 +1,34 @@
+<p-button
+  (onClick)="getLink()"
+  [text]="true"
+  label="Get link"
+  size="small"
+/>
+<p-dialog
+  (visibleChange)="!$event && link.set('')"
+  [modal]="true"
+  [style]="{ width: '500px', maxWidth: '95vw' }"
+  [visible]="!!link()"
+  header="Invitation link"
+>
+  <p class="dialog-description">
+    Share this link with the invited colleague. It expires seven days after the
+    most recent invitation.
+  </p>
+  <label [for]="'invitation-link-' + user().email">Link</label
+  ><input
+  (focus)="$any($event.target).select()"
+  [fluid]="true"
+  [id]="'invitation-link-' + user().email"
+  [value]="link()"
+  pInputText
+  readonly
+/>
+  <div class="dialog-actions">
+    <p-button
+      (onClick)="copyLink()"
+      [icon]="copied() ? 'pi pi-check' : 'pi pi-copy'"
+      [label]="copied() ? 'Copied' : 'Copy link'"
+    />
+  </div>
+</p-dialog>

@@ -1,41 +1,66 @@
-import { Component, effect, inject, signal, type OnInit } from '@angular/core';
+import { NotificationService } from '../../core/services/notification.service';
+import {
+  Component,
+  effect,
+  Injector,
+  signal,
+  type OnInit,
+} from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
-import { ApiService } from '../../core/services/api.service';
+import { UserService } from '../../core/services/user.service';
 import { errorMessage } from '../../core/utils/error-message';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [ReactiveFormsModule, CardModule, InputTextModule, MessageModule],
+  imports: [ReactiveFormsModule, CardModule, InputTextModule],
   templateUrl: './profile.page.html',
 })
 export class ProfilePage implements OnInit {
-  readonly api = inject(ApiService);
   readonly loading = signal(true);
-  readonly error = signal('');
-  readonly form = inject(NonNullableFormBuilder).group({
-    id: '',
-    name: '',
-    email: '',
-    role: '',
-    createdAt: '',
-    updatedAt: '',
-  });
+  readonly form;
 
-  constructor() {
-    effect(() => {
-      const user = this.api.user();
-      this.form.reset(user ? { ...user, name: user.name ?? '' } : {});
+  constructor(
+    readonly users: UserService,
+    private readonly notifications: NotificationService,
+    private readonly formBuilder: NonNullableFormBuilder,
+    private readonly injector: Injector,
+  ) {
+    this.form = this.initializeProfileForm();
+  }
+
+  private initializeProfileForm() {
+    return this.formBuilder.group({
+      id: '',
+      name: '',
+      email: '',
+      role: '',
+      createdAt: '',
+      updatedAt: '',
     });
   }
 
-  async ngOnInit() {
+  private observeProfileChanges(): void {
+    effect(
+      () => {
+        const user = this.users.user();
+        this.form.reset(user ? { ...user, name: user.name ?? '' } : {});
+      },
+      { injector: this.injector },
+    );
+  }
+
+  async ngOnInit(): Promise<void> {
+    this.observeProfileChanges();
+    await this.loadProfile();
+  }
+
+  private async loadProfile(): Promise<void> {
     try {
-      await this.api.loadUser();
+      await this.users.loadUser();
     } catch (error) {
-      this.error.set(errorMessage(error));
+      this.notifications.error(errorMessage(error));
     } finally {
       this.loading.set(false);
     }

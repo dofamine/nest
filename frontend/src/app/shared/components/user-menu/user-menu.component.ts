@@ -1,56 +1,62 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { NotificationService } from '../../../core/services/notification.service';
+import { Component, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import type { MenuItem } from 'primeng/api';
 import { MenuModule } from 'primeng/menu';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
-import { MessageModule } from 'primeng/message';
-import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { UserService } from '../../../core/services/user.service';
 import { errorMessage } from '../../../core/utils/error-message';
 
 @Component({
   selector: 'app-user-menu',
-  imports: [MenuModule, ButtonModule, TagModule, MessageModule],
+  imports: [MenuModule, ButtonModule, TagModule],
   templateUrl: './user-menu.component.html',
 })
 export class UserMenuComponent {
-  readonly api = inject(ApiService);
-  private readonly router = inject(Router);
-  readonly busy = signal(false);
-  readonly error = signal('');
+  readonly loading = signal(false);
   readonly menu = computed<MenuItem[]>(() => [
     {
       label: 'My profile',
       icon: 'pi pi-user',
       routerLink: '/profile',
-      disabled: this.busy(),
+      disabled: this.loading(),
     },
     { separator: true },
     {
       label: 'Log out',
       icon: 'pi pi-sign-out',
       command: () => void this.logout(),
-      disabled: this.busy(),
+      disabled: this.loading(),
     },
     {
       label: 'Log out from everywhere',
       icon: 'pi pi-desktop',
       command: () => void this.logout(true),
-      disabled: this.busy(),
+      disabled: this.loading(),
     },
   ]);
 
+  constructor(
+    readonly users: UserService,
+    private readonly notifications: NotificationService,
+    private readonly auth: AuthService,
+    private readonly router: Router,
+  ) {}
+
   async logout(all = false): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    this.error.set('');
+    if (this.loading()) return;
+
+    this.loading.set(true);
+
     try {
-      await this.api.logout(all);
+      await this.auth.logout(all);
       await this.router.navigateByUrl('/login');
     } catch (error) {
-      this.error.set(errorMessage(error));
+      this.notifications.error(errorMessage(error));
     } finally {
-      this.busy.set(false);
+      this.loading.set(false);
     }
   }
 }

@@ -1,12 +1,12 @@
 import { inject } from '@angular/core';
 import { type CanActivateChildFn, Router } from '@angular/router';
-import { ApiService } from '../services/api.service';
+import { UserService } from '../services/user.service';
 
 export const authGuard: CanActivateChildFn = async () => {
-  const api = inject(ApiService);
+  const users = inject(UserService);
   const router = inject(Router);
   try {
-    return (api.user() ?? (await api.loadUser()))
+    return (users.user() ?? (await users.loadUser()))
       ? true
       : router.createUrlTree(['/login']);
   } catch {

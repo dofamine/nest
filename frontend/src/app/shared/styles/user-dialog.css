@@ -1,0 +1,16 @@
+p-dialog {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.dialog-description {
+  color: var(--portal-muted);
+  font-size: 14px;
+  margin-top: 0;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}

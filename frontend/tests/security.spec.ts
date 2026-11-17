@@ -16,7 +16,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { authGuard } from '../src/app/core/guards/auth.guard';
 import { adminGuard } from '../src/app/core/guards/admin.guard';
 import { sessionInterceptor } from '../src/app/core/interceptors/session.interceptor';
-import { ApiService } from '../src/app/core/services/api.service';
+import { UserService } from '../src/app/core/services/user.service';
 import { SessionStore } from '../src/app/core/services/session.store';
 import { publicRoutes } from '../src/app/routes/public.routes';
 import { privateRoutes } from '../src/app/routes/private.routes';
@@ -72,7 +72,7 @@ describe('frontend access boundaries', () => {
       const loadUser = vi.fn().mockResolvedValue(signedIn ? user : null);
       const injector = createEnvironmentInjector(
         [
-          { provide: ApiService, useValue: { user: () => null, loadUser } },
+          { provide: UserService, useValue: { user: () => null, loadUser } },
           {
             provide: Router,
             useValue: { createUrlTree: () => 'login-redirect' },

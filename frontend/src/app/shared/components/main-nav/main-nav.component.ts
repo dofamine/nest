@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { EUserRole } from '../../../core/models/user';
+import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { SessionStore } from '../../../core/services/session.store';
 
@@ -15,7 +16,7 @@ import { SessionStore } from '../../../core/services/session.store';
         ariaCurrentWhenActive="page"
         ><i class="pi pi-home" aria-hidden="true"></i> Dashboard</a
       >
-      @if (session.user()?.role === 'admin') {
+      @if (session.user()?.role === EUserRole.admin) {
         <a
           routerLink="/users"
           routerLinkActive="active"
@@ -33,5 +34,7 @@ import { SessionStore } from '../../../core/services/session.store';
   `,
 })
 export class MainNavComponent {
-  readonly session = inject(SessionStore);
+  protected readonly EUserRole = EUserRole;
+
+  constructor(readonly session: SessionStore) {}
 }

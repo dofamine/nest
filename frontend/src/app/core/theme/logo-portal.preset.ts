@@ -17,6 +17,34 @@ export const LogoPortalPreset = definePreset(Aura, {
       950: '{red.950}',
     },
     colorScheme: {
+      dark: {
+        primary: {
+          color: '{red.400}',
+          contrastColor: '{zinc.950}',
+          hoverColor: '{red.300}',
+          activeColor: '{red.200}',
+        },
+        surface: {
+          0: '#ffffff',
+          50: '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d4d4d8',
+          400: '#a1a1aa',
+          500: '#71717a',
+          600: '#52525b',
+          700: '#3f3f46',
+          800: '#27272a',
+          900: '#141416',
+          950: '#09090b',
+        },
+        highlight: {
+          background: 'rgba(248, 113, 113, 0.14)',
+          focusBackground: 'rgba(248, 113, 113, 0.22)',
+          color: '{red.300}',
+          focusColor: '{red.200}',
+        },
+      },
       light: {
         primary: {
           color: '{red.700}',

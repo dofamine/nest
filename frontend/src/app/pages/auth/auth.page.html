@@ -6,89 +6,89 @@
       One place to connect with your team, manage your account, and get to work.
     </p>
     <div class="intro-note">
-      <i class="pi pi-users note-icon" aria-hidden="true"></i>
+      <i aria-hidden="true" class="pi pi-users note-icon"></i>
       <div>
         <strong>Better, together.</strong>
         <p>Access is by invitation. Your administrator can help you join.</p>
       </div>
     </div>
   </div>
-  <p-card styleClass="auth-card">
+  <p-card class="auth-card">
     <span class="eyebrow"
-      >{{ mode() === 'register' ? 'YOU’RE INVITED' : 'YOUR ACCOUNT' }}</span
+      >{{ mode() === EAuthPageMode.register ? 'YOU’RE INVITED' : 'YOUR ACCOUNT'
+      }}</span
     >
     <h2 id="form-title">{{ title() }}</h2>
     <p class="muted">{{ description() }}</p>
-    @if (error()) {
-    <p-message severity="error" styleClass="feedback">{{ error() }}</p-message>
-    } @if (success()) {
-    <p-message severity="success" styleClass="feedback"
-      >{{ success() }}</p-message
-    >
-    <a pButton routerLink="/login" class="submit-button"
+    @if (success()) {
+
+    <a class="submit-button" pButton routerLink="/login"
       ><span pButtonLabel>Back to sign in</span
-      ><i pButtonIcon class="pi pi-arrow-right" aria-hidden="true"></i
+      ><i aria-hidden="true" class="pi pi-arrow-right" pButtonIcon></i
     ></a>
-    } @else { @if (mode() === 'reset' && !token()) {
-    <p-message severity="error" styleClass="feedback"
-      >This link is missing a reset token. Request a new reset email.</p-message
-    >
+    } @else { @if (mode() === EAuthPageMode.reset && !token()) {
+
     <a routerLink="/forgot-password">Request a new link →</a>
     } @else {
-    <form [formGroup]="form()" (ngSubmit)="submit()" aria-labelledby="form-title">
-      @if (mode() !== 'reset') {
+    <form
+      (ngSubmit)="submit()"
+      [formGroup]="form()"
+      aria-labelledby="form-title"
+    >
+      @if (mode() !== EAuthPageMode.reset) {
       <div class="form-field">
         <label for="email">Email address</label>
         <input
-          pInputText
-          id="email"
-          name="email"
-          type="email"
-          formControlName="email"
-          required
-          autocomplete="email"
-          placeholder="you@example.com"
           [fluid]="true"
           [invalid]="submitted() && form().controls.email.invalid"
+          autocomplete="email"
+          formControlName="email"
+          id="email"
+          name="email"
+          pInputText
+          placeholder="you@example.com"
+          required
+          type="email"
         />
       </div>
-      } @if (mode() !== 'forgot') {
+      } @if (mode() !== EAuthPageMode.forgot) {
       <div class="form-field">
         <label for="password"
-          >{{ mode() === 'reset' ? 'New password' : 'Password' }}</label
+          >{{ mode() === EAuthPageMode.reset ? 'New password' : 'Password'
+          }}</label
         >
         <p-password
+          [autocomplete]="mode() === EAuthPageMode.login ? 'current-password' : 'new-password'"
+          [feedback]="mode() !== EAuthPageMode.login"
+          [fluid]="true"
+          [invalid]="submitted() && form().controls.password.invalid"
+          [maxlength]="255"
+          [toggleMask]="true"
+          formControlName="password"
           inputId="password"
           name="password"
-          formControlName="password"
-          required
-          [maxLength]="255"
-          [feedback]="mode() !== 'login'"
-          [toggleMask]="true"
-          [fluid]="true"
-          [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'"
           placeholder="At least 8 characters"
-          [invalid]="submitted() && form().controls.password.invalid"
+          required
         />
       </div>
       } @if (submitted() && form().invalid) {
       <p-message severity="error" size="small" variant="simple"
         >Enter a valid email and, where required, a password of at least 8
-        characters.</p-message
-      >
+        characters.
+      </p-message>
       }
       <p-button
-        type="submit"
+        [disabled]="loading()"
+        [fluid]="true"
         [label]="buttonLabel()"
+        [loading]="loading()"
         icon="pi pi-arrow-right"
         iconPos="right"
-        [loading]="busy()"
-        [disabled]="busy()"
         styleClass="submit-button"
-        [fluid]="true"
+        type="submit"
       />
     </form>
-    @if (mode() === 'login') {
+    @if (mode() === EAuthPageMode.login) {
     <a class="secondary-link" routerLink="/forgot-password"
       >Forgot your password?</a
     >
