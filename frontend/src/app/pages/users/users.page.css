@@ -1,15 +1,26 @@
 :host {
   display: block;
+  height: 100%;
+  min-height: 0;
 }
 .users-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   background: var(--portal-surface);
   border: 1px solid var(--portal-border);
   border-radius: 12px;
   padding: 30px;
-  min-height: 480px;
+}
+p-table {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
 }
 .users-toolbar {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 16px;
   margin-bottom: 34px;
@@ -126,4 +137,20 @@ td {
   .search-field {
     flex-basis: 100%;
   }
+}
+
+.filter-row th {
+  padding-block: 10px;
+  --p-inputtext-sm-font-size: 0.7rem;
+  --p-inputtext-sm-padding-y: calc(0.35rem + 1px);
+  --p-inputtext-sm-padding-x: 0.525rem;
+  --p-select-sm-font-size: 0.7rem;
+  --p-select-sm-padding-y: calc(0.35rem + 1px);
+  --p-select-sm-padding-x: 0.525rem;
+  --p-select-dropdown-width: 1.75rem;
+}
+.filter-row input,
+.filter-row p-select {
+  width: 100%;
+  min-width: 98px;
 }

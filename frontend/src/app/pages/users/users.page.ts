@@ -1,15 +1,16 @@
 import { UserService } from '../../core/services/user.service';
 import { EUserStatus, IUser, UserModel } from '../../core/models/user';
 import { USER_STATUS_OPTIONS } from './config';
+import { USER_ROLE_OPTIONS } from './components/user-actions-menu/config';
+import { IUserFiltersForm, IUserTableRow } from './users.model';
 import { NotificationService } from '../../core/services/notification.service';
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { Component, computed, type OnInit, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
+import { Table, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { AdminService } from '../../core/services/admin.service';
 import { errorMessage } from '../../core/utils/error-message';
@@ -49,21 +50,12 @@ export class UsersPage implements OnInit {
   // Invitation dialog and request state.
   readonly inviting = signal(false);
 
+  // Native table filters and presentation values.
   readonly statuses = USER_STATUS_OPTIONS;
-  readonly filtersForm;
+  readonly roles = USER_ROLE_OPTIONS;
+  readonly filtersForm: FormGroup<IUserFiltersForm>;
   protected readonly EUserStatus = EUserStatus;
-  private readonly filterValue;
-
-  readonly filteredUsers = computed(() => {
-    const { search = '', status = 'all' } = this.filterValue();
-    const query = search.trim().toLowerCase();
-
-    return this.data().filter(
-      (user) =>
-        (status === 'all' || user.status === status) &&
-        `${user.name} ${user.email}`.toLowerCase().includes(query),
-    );
-  });
+  readonly tableUsers = computed(() => this.getTableUsers());
 
   constructor(
     private readonly notifications: NotificationService,
@@ -73,9 +65,6 @@ export class UsersPage implements OnInit {
   ) {
     this.currentUser = this.userService.user;
     this.filtersForm = this.initializeUserFilters();
-    this.filterValue = toSignal(this.filtersForm.valueChanges, {
-      initialValue: this.filtersForm.getRawValue(),
-    });
   }
 
   async ngOnInit(): Promise<void> {
@@ -158,7 +147,27 @@ export class UsersPage implements OnInit {
     }
   }
 
-  private initializeUserFilters() {
-    return this.formBuilder.group({ search: '', status: 'all' });
+  protected clearFilters(table: Table): void {
+    this.filtersForm.reset();
+    table.clear();
+  }
+
+  private getTableUsers(): IUserTableRow[] {
+    return this.data().map((user) => ({
+      ...user,
+      displayName: user.name || user.email || '',
+      identitySearch: `${user.name || ''} ${user.email || ''}`,
+      createdAtSort: user.createdAt ? Date.parse(user.createdAt) : null,
+      lastActiveAtSort: user.lastActiveAt ? Date.parse(user.lastActiveAt) : null,
+    }));
+  }
+
+  private initializeUserFilters(): FormGroup<IUserFiltersForm> {
+    return this.formBuilder.group({
+      search: '',
+      user: '',
+      role: new FormControl<IUser['role'] | null>(null),
+      status: new FormControl<IUser['status'] | null>(null),
+    });
   }
 }

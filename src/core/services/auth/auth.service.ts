@@ -40,21 +40,23 @@ export class AuthService {
     )
       return null;
 
-    this.recordActivity(session.user);
+    await this.recordActivity(session.user);
     await this.handleSessionExpiration(session, res);
 
     return session.user;
   }
 
   // Record activity at most once per minute per user.
-  private recordActivity(user: Omit<UserModel, 'password'>): void {
+  private async recordActivity(
+    user: Omit<UserModel, 'password'>,
+  ): Promise<void> {
     const frequencyWindow = 60_000;
 
     if (
       !user.lastActiveAt ||
       Date.now() - user.lastActiveAt.getTime() > frequencyWindow
     ) {
-      void this.prismaService.user.updateMany({
+      await this.prismaService.user.updateMany({
         where: {
           id: user.id,
           deactivatedAt: null,

@@ -5,17 +5,16 @@
       <input
         aria-label="Search by name or email"
         formControlName="search"
+        (input)="usersTable.filterGlobal(filtersForm.controls.search.value.trim(), 'contains')"
         pInputText
         placeholder="Search by name or email"
       />
     </div>
-    <p-select
-      [options]="statuses"
-      appendTo="body"
-      ariaLabel="Filter by status"
-      formControlName="status"
-      optionLabel="label"
-      optionValue="value"
+    <p-button
+      (onClick)="clearFilters(usersTable)"
+      [outlined]="true"
+      icon="pi pi-filter-slash"
+      label="Clear filters"
     />
     <app-invite-user
       (invited)="onInviteUser($event)"
@@ -32,21 +31,66 @@
     />
   }
   <p-table
+    #usersTable
+    [globalFilterFields]="['name', 'email']"
     [loading]="isDataLoading()"
-    [paginator]="filteredUsers().length > 10"
-    [rowsPerPageOptions]="[10, 25, 50]"
-    [rows]="10"
-    [value]="filteredUsers()"
+    [scrollable]="true"
+    [value]="tableUsers()"
     dataKey="email"
+    scrollHeight="flex"
   >
     <ng-template #header>
       <tr>
-        <th scope="col">User</th>
-        <th scope="col">Role</th>
-        <th scope="col">Status</th>
-        <th scope="col">User Since</th>
-        <th scope="col">Last active</th>
+        <th scope="col" pSortableColumn="displayName">
+          User <p-sortIcon field="displayName" />
+        </th>
+        <th scope="col" pSortableColumn="role">
+          Role <p-sortIcon field="role" />
+        </th>
+        <th scope="col" pSortableColumn="status">
+          Status <p-sortIcon field="status" />
+        </th>
+        <th scope="col" pSortableColumn="createdAtSort">
+          User Since <p-sortIcon field="createdAtSort" />
+        </th>
+        <th scope="col" pSortableColumn="lastActiveAtSort">
+          Last active <p-sortIcon field="lastActiveAtSort" />
+        </th>
         <th scope="col"><span class="sr-only">Actions</span></th>
+      </tr>
+      <tr class="filter-row">
+        <th scope="col">
+          <p-columnFilter field="identitySearch" matchMode="contains" [showMenu]="false" [showClearButton]="false">
+            <ng-template #filter let-filter="filterCallback">
+              <input pInputText pSize="small" [formControl]="filtersForm.controls.user"
+                (input)="filter(filtersForm.controls.user.value.trim())"
+                aria-label="Filter by name or email" placeholder="Name or email" />
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th scope="col">
+          <p-columnFilter field="role" matchMode="equals" [showMenu]="false" [showClearButton]="false">
+            <ng-template #filter let-filter="filterCallback">
+              <p-select size="small" [formControl]="filtersForm.controls.role" [options]="roles"
+                (onChange)="filter($event.value)" [showClear]="true"
+                optionLabel="label" optionValue="value" placeholder="Any role"
+                ariaLabel="Filter by role" appendTo="body" />
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th scope="col">
+          <p-columnFilter field="status" matchMode="equals" [showMenu]="false" [showClearButton]="false">
+            <ng-template #filter let-filter="filterCallback">
+              <p-select size="small" [formControl]="filtersForm.controls.status" [options]="statuses"
+                (onChange)="filter($event.value)" [showClear]="true"
+                optionLabel="label" optionValue="value" placeholder="Any status"
+                ariaLabel="Filter by status" appendTo="body" />
+            </ng-template>
+          </p-columnFilter>
+        </th>
+        <th scope="col"><span class="sr-only">No user-since filter</span></th>
+        <th scope="col"><span class="sr-only">No last-active filter</span></th>
+        <th scope="col"><span class="sr-only">No actions filter</span></th>
       </tr>
     </ng-template>
     <ng-template #body let-user>
